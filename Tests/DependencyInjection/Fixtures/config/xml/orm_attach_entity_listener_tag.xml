@@ -8,11 +8,12 @@
 
     <services>
         <service id="entity_listener1" class="EntityListener1">
-            <tag name="doctrine.orm.entity_listener" entity="My/Entity1" event="postLoad" />
+            <tag name="doctrine.orm.entity_listener" entity="My/Entity1" event="postLoad" priority="1" />
         </service>
 
         <service id="entity_listener2" class="EntityListener2">
             <tag name="doctrine.orm.entity_listener" entity_manager="em2" entity="My/Entity2" event="preFlush" method="preFlushHandler" />
+            <tag name="doctrine.orm.entity_listener" entity="My/Entity1" event="postLoad" priority="2" />
         </service>
 
         <service id="invokable_entity_listener" class="Doctrine\Bundle\DoctrineBundle\Tests\DependencyInjection\Fixtures\InvokableEntityListener">

@@ -6,6 +6,7 @@ use Doctrine\Bundle\DoctrineBundle\Mapping\ContainerEntityListenerResolver;
 use Doctrine\Bundle\DoctrineBundle\Mapping\EntityListenerServiceResolver;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
@@ -17,12 +18,14 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 class EntityListenerPass implements CompilerPassInterface
 {
+    use PriorityTaggedServiceTrait;
+
     /**
      * {@inheritDoc}
      */
     public function process(ContainerBuilder $container)
     {
-        $resolvers = $container->findTaggedServiceIds('doctrine.orm.entity_listener');
+        $resolvers = $this->findAndSortTaggedServices('doctrine.orm.entity_listener', $container);
 
         $lazyServiceReferencesByResolver = [];
 
