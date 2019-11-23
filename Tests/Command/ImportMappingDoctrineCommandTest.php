@@ -2,6 +2,7 @@
 
 namespace Doctrine\Bundle\DoctrineBundle\Tests\Command;
 
+use Doctrine\Bundle\DBALBundle\DoctrineDBALBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -119,6 +120,7 @@ class ImportMappingTestingKernel extends Kernel
     {
         return [
             new FrameworkBundle(),
+            new DoctrineDBALBundle(),
             new DoctrineBundle(),
             new ImportMappingTestFooBundle(),
         ];

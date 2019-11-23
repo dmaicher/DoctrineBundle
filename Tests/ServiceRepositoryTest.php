@@ -2,6 +2,7 @@
 
 namespace Doctrine\Bundle\DoctrineBundle\Tests;
 
+use Doctrine\Bundle\DBALBundle\DependencyInjection\DoctrineDBALExtension;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\ServiceRepositoryCompilerPass;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\DoctrineExtension;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -59,13 +60,18 @@ class ServiceRepositoryTest extends TestCase
         $container->registerExtension($extension);
         $extension->load(['framework' => []], $container);
 
-        $extension = new DoctrineExtension();
+        $extension = new DoctrineDBALExtension();
         $container->registerExtension($extension);
-        $extension->load([[
+        $extension->load([
             'dbal' => [
                 'driver' => 'pdo_sqlite',
                 'charset' => 'UTF8',
-            ],
+            ]
+        ], $container);
+
+        $extension = new DoctrineExtension();
+        $container->registerExtension($extension);
+        $extension->load([[
             'orm' => [
                 'mappings' => [
                     'RepositoryServiceBundle' => [

@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <parameters>
+        <parameter key="doctrine.class">Doctrine\Bundle\DoctrineBundle\Registry</parameter>
+        <parameter key="doctrine.entity_managers" type="collection"></parameter>
+        <parameter key="doctrine.default_entity_manager"></parameter>
+    </parameters>
+
+    <services>
+        <service id="doctrine" class="%doctrine.class%" public="true">
+            <argument type="service" id="service_container" />
+            <argument>%doctrine.connections%</argument>
+            <argument>%doctrine.entity_managers%</argument>
+            <argument>%doctrine.default_connection%</argument>
+            <argument>%doctrine.default_entity_manager%</argument>
+        </service>
+        <service id="Doctrine\Common\Persistence\ManagerRegistry" alias="doctrine" public="false" />
+    </services>
+
+</container>

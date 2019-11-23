@@ -2,6 +2,7 @@
 
 namespace Doctrine\Bundle\DoctrineBundle\Tests;
 
+use Doctrine\Bundle\DBALBundle\DependencyInjection\DoctrineDBALExtension;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\DoctrineExtension;
 use Doctrine\Bundle\DoctrineBundle\Tests\DependencyInjection\TestType;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -40,9 +41,9 @@ class TestCase extends BaseTestCase
         ]));
         $container->set('annotation_reader', new AnnotationReader());
 
-        $extension = new DoctrineExtension();
+        $extension = new DoctrineDBALExtension();
         $container->registerExtension($extension);
-        $extension->load([[
+        $extension->load([
             'dbal' => [
                 'connections' => [
                     'default' => [
@@ -57,7 +58,13 @@ class TestCase extends BaseTestCase
                         'class' => TestType::class,
                     ],
                 ],
-            ], 'orm' => [
+            ]
+        ], $container);
+
+        $extension = new DoctrineExtension();
+        $container->registerExtension($extension);
+        $extension->load([[
+            'orm' => [
                 'default_entity_manager' => 'default',
                 'entity_managers' => [
                     'default' => [

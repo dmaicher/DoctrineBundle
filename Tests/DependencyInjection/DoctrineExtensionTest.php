@@ -2,11 +2,11 @@
 
 namespace Doctrine\Bundle\DoctrineBundle\Tests\DependencyInjection;
 
+use Doctrine\Bundle\DBALBundle\DependencyInjection\DoctrineDBALExtension;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\DoctrineExtension;
 use Doctrine\Bundle\DoctrineBundle\Tests\Builder\BundleConfigurationBuilder;
 use Doctrine\Common\Proxy\AbstractProxyFactory;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\Connection as DriverConnection;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -31,8 +31,6 @@ class DoctrineExtensionTest extends TestCase
         $extension->load([$config], $container);
 
         $expectedAliases = [
-            DriverConnection::class => 'database_connection',
-            Connection::class => 'database_connection',
             EntityManagerInterface::class => 'doctrine.orm.entity_manager',
         ];
 
@@ -55,41 +53,6 @@ class DoctrineExtensionTest extends TestCase
 
         $this->assertTrue($container->getDefinition('doctrine')->isPublic());
         $this->assertTrue($container->getAlias('doctrine.orm.entity_manager')->isPublic());
-        $this->assertTrue($container->getAlias('database_connection')->isPublic());
-    }
-
-    public function testDbalGenerateDefaultConnectionConfiguration()
-    {
-        $container = $this->getContainer();
-        $extension = new DoctrineExtension();
-
-        $container->registerExtension($extension);
-
-        $extension->load([['dbal' => []]], $container);
-
-        // doctrine.dbal.default_connection
-        $this->assertEquals('%doctrine.default_connection%', $container->getDefinition('doctrine')->getArgument(3));
-        $this->assertEquals('default', $container->getParameter('doctrine.default_connection'));
-        $this->assertEquals('root', $container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['user']);
-        $this->assertNull($container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['password']);
-        $this->assertEquals('localhost', $container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['host']);
-        $this->assertNull($container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['port']);
-        $this->assertEquals('pdo_mysql', $container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['driver']);
-        $this->assertEquals([], $container->getDefinition('doctrine.dbal.default_connection')->getArgument(0)['driverOptions']);
-    }
-
-    public function testDbalOverrideDefaultConnection()
-    {
-        $container = $this->getContainer();
-        $extension = new DoctrineExtension();
-
-        $container->registerExtension($extension);
-
-        $extension->load([[], ['dbal' => ['default_connection' => 'foo']], []], $container);
-
-        // doctrine.dbal.default_connection
-        $this->assertEquals('%doctrine.default_connection%', $container->getDefinition('doctrine')->getArgument(3), '->load() overrides existing configuration options');
-        $this->assertEquals('foo', $container->getParameter('doctrine.default_connection'), '->load() overrides existing configuration options');
     }
 
     /**
@@ -190,56 +153,13 @@ class DoctrineExtensionTest extends TestCase
         );
     }
 
-    public function testDbalLoad()
-    {
-        $container = $this->getContainer();
-        $extension = new DoctrineExtension();
-
-        $extension->load([
-            ['dbal' => ['connections' => ['default' => ['password' => 'foo']]]],
-            [],
-            ['dbal' => ['default_connection' => 'foo']],
-            [],
-        ], $container);
-
-        $config = $container->getDefinition('doctrine.dbal.default_connection')->getArgument(0);
-
-        $this->assertEquals('foo', $config['password']);
-        $this->assertEquals('root', $config['user']);
-    }
-
-    public function testDbalWrapperClass()
-    {
-        $container = $this->getContainer();
-        $extension = new DoctrineExtension();
-
-        $extension->load(
-            [
-                [
-                    'dbal' => [
-                        'connections' => [
-                            'default' => ['password' => 'foo', 'wrapper_class' => TestWrapperClass::class],
-                            'second' => ['password' => 'boo'],
-                        ],
-                    ],
-                ],
-                [],
-                ['dbal' => ['default_connection' => 'foo']],
-                [],
-            ],
-            $container
-        );
-
-        $this->assertEquals(TestWrapperClass::class, $container->getDefinition('doctrine.dbal.default_connection')->getClass());
-        $this->assertNull($container->getDefinition('doctrine.dbal.second_connection')->getClass());
-    }
-
     public function testDependencyInjectionConfigurationDefaults()
     {
         $container = $this->getContainer();
         $extension = new DoctrineExtension();
         $config    = BundleConfigurationBuilder::createBuilderWithBaseValues()->build();
 
+        $container->getExtension('doctrine_dbal')->load([$config['dbal']], $container);
         $extension->load([$config], $container);
 
         $this->assertFalse($container->getParameter('doctrine.orm.auto_generate_proxy_classes'));
@@ -282,6 +202,7 @@ class DoctrineExtensionTest extends TestCase
             ->build();
 
         $container = $this->getContainer();
+        $container->getExtension('doctrine_dbal')->load([$config['dbal']], $container);
         $extension->load([$config], $container);
         $this->compileContainer($container);
 
@@ -338,26 +259,6 @@ class DoctrineExtensionTest extends TestCase
         $this->assertEquals('cache.app', (string) $arguments[0]);
     }
 
-    public function testUseSavePointsAddMethodCallToAddSavepointsToTheConnection()
-    {
-        $container = $this->getContainer();
-        $extension = new DoctrineExtension();
-
-        $extension->load([[
-            'dbal' => [
-                'connections' => [
-                    'default' => ['password' => 'foo', 'use_savepoints' => true],
-                ],
-            ],
-        ],
-        ], $container);
-
-        $calls = $container->getDefinition('doctrine.dbal.default_connection')->getMethodCalls();
-        $this->assertCount(1, $calls);
-        $this->assertEquals('setNestTransactionsWithSavepoints', $calls[0][0]);
-        $this->assertTrue($calls[0][1][0]);
-    }
-
     public function testAutoGenerateProxyClasses()
     {
         $container = $this->getContainer();
@@ -389,6 +290,7 @@ class DoctrineExtensionTest extends TestCase
 
         $configurationArray = BundleConfigurationBuilder::createBuilderWithBaseValues()->build();
 
+        $container->getExtension('doctrine_dbal')->load([$configurationArray['dbal']], $container);
         $extension->load([$configurationArray], $container);
         $this->compileContainer($container);
 
@@ -411,6 +313,7 @@ class DoctrineExtensionTest extends TestCase
             ->addBaseSecondLevelCache()
             ->build();
 
+        $container->getExtension('doctrine_dbal')->load([$configurationArray['dbal']], $container);
         $extension->load([$configurationArray], $container);
         $this->compileContainer($container);
 
@@ -442,6 +345,7 @@ class DoctrineExtensionTest extends TestCase
             ])
             ->build();
 
+        $container->getExtension('doctrine_dbal')->load([$configurationArray['dbal']], $container);
         $extension->load([$configurationArray], $container);
         $this->compileContainer($container);
 
@@ -827,6 +731,10 @@ class DoctrineExtensionTest extends TestCase
         $container->setDefinition('cache.system', (new Definition(ArrayAdapter::class))->setPublic(true));
         $container->setDefinition('cache.app', (new Definition(ArrayAdapter::class))->setPublic(true));
         $container->setDefinition('my_pool', (new Definition(ArrayAdapter::class))->setPublic(true));
+
+        $container->registerExtension(new DoctrineDBALExtension());
+
+        $container->setParameter('doctrine.default_connection', 'default');
 
         return $container;
     }

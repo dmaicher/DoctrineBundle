@@ -2,6 +2,8 @@
 
 namespace Doctrine\Bundle\DoctrineBundle\Tests\DependencyInjection;
 
+use Doctrine\Bundle\DBALBundle\DBALBundle;
+use Doctrine\Bundle\DBALBundle\DependencyInjection\DoctrineDBALExtension;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\DbalSchemaFilterPass;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\EntityListenerPass;
 use Doctrine\Bundle\DoctrineBundle\DependencyInjection\Compiler\WellKnownSchemaFilterPass;
@@ -1024,6 +1026,7 @@ abstract class AbstractDoctrineExtensionTest extends TestCase
     private function getContainer(array $bundles)
     {
         $map = [];
+
         foreach ($bundles as $bundle) {
             require_once __DIR__ . '/Fixtures/Bundles/' . $bundle . '/' . $bundle . '.php';
 
@@ -1041,6 +1044,8 @@ abstract class AbstractDoctrineExtensionTest extends TestCase
             'kernel.bundles_metadata' => [],
             'container.build_id' => uniqid(),
         ]));
+
+        $container->registerExtension(new DoctrineDBALExtension());
 
         // Register dummy cache services so we don't have to load the FrameworkExtension
         $container->setDefinition('cache.system', (new Definition(ArrayAdapter::class))->setPublic(true));
